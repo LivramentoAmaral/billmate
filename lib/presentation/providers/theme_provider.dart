@@ -1,145 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/constants/app_constants.dart' as constants;
+// Nota: tema escuro removido — o app usará somente o tema claro.
+import 'package:flutter/foundation.dart';
+import '../../core/theme/app_theme.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  // Mantemos a interface, mas forçamos sempre o tema claro.
+  final ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
 
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
-  bool get isLightMode => _themeMode == ThemeMode.light;
-  bool get isSystemMode => _themeMode == ThemeMode.system;
+  bool get isDarkMode => false;
+  bool get isLightMode => true;
+  bool get isSystemMode => false;
 
-  ThemeProvider() {
-    _loadThemeMode();
-  }
+  ThemeProvider();
 
-  Future<void> _loadThemeMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    final themeModeString =
-        prefs.getString(constants.AppConstants.keyThemeMode);
-
-    if (themeModeString != null) {
-      _themeMode = ThemeMode.values.firstWhere(
-        (mode) => mode.name == themeModeString,
-        orElse: () => ThemeMode.system,
-      );
-      notifyListeners();
-    }
-  }
-
-  Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(constants.AppConstants.keyThemeMode, mode.name);
-  }
-
+  /// toggleTheme é mantido para compatibilidade, mas não altera o tema
+  /// já que a aplicação usa somente o tema claro.
   Future<void> toggleTheme() async {
-    switch (_themeMode) {
-      case ThemeMode.light:
-        await setThemeMode(ThemeMode.dark);
-        break;
-      case ThemeMode.dark:
-        await setThemeMode(ThemeMode.system);
-        break;
-      case ThemeMode.system:
-        await setThemeMode(ThemeMode.light);
-        break;
+    if (kDebugMode) {
+      // apenas um hint em debug
+      // ignore: avoid_print
+      print('toggleTheme called but dark theme is disabled.');
     }
+    return;
   }
 
-  // Tema claro
-  ThemeData get lightTheme => ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32), // Verde escuro
-          brightness: Brightness.light,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF2E7D32),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          type: BottomNavigationBarType.fixed,
-          elevation: 8,
-        ),
-      );
-
-  // Tema escuro
-  ThemeData get darkTheme => ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50), // Verde mais claro para dark
-          brightness: Brightness.dark,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1B5E20),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          type: BottomNavigationBarType.fixed,
-          elevation: 8,
-        ),
-      );
+  // Tema claro - usando AppTheme centralizado
+  ThemeData get lightTheme => AppTheme.lightTheme;
 }

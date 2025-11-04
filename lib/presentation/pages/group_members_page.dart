@@ -26,9 +26,12 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text('Membros - ${widget.group.name}'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         actions: [
           // IconButton(
           //   onPressed: _scanQRCode,
@@ -59,8 +62,7 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.outline.withAlpha(51),
                   ),
                 ),
                 child: Column(
@@ -113,30 +115,33 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
                           ),
                         ),
                         title: Text('Usuário ${member.userId}'),
-                        subtitle: Row(
-                          children: [
-                            Icon(
-                              isMemberAdmin
-                                  ? Icons.admin_panel_settings
-                                  : Icons.person,
-                              size: 16,
-                              color: isMemberAdmin
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.outline,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isMemberAdmin ? 'Administrador' : 'Membro',
-                              style: TextStyle(
+                        subtitle: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              Icon(
+                                isMemberAdmin
+                                    ? Icons.admin_panel_settings
+                                    : Icons.person,
+                                size: 16,
                                 color: isMemberAdmin
                                     ? Theme.of(context).colorScheme.primary
                                     : Theme.of(context).colorScheme.outline,
-                                fontWeight: isMemberAdmin
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                isMemberAdmin ? 'Administrador' : 'Membro',
+                                style: TextStyle(
+                                  color: isMemberAdmin
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.outline,
+                                  fontWeight: isMemberAdmin
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: isCurrentUserAdmin && !isMemberAdmin
                             ? PopupMenuButton<String>(
@@ -149,20 +154,36 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
                                       children: [
                                         Icon(Icons.admin_panel_settings),
                                         SizedBox(width: 8),
-                                        Text('Promover a Admin'),
+                                        Expanded(
+                                          child: Text(
+                                            'Promover a Admin',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'remove',
                                     child: Row(
                                       children: [
                                         Icon(Icons.person_remove,
-                                            color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Remover',
-                                            style:
-                                                TextStyle(color: Colors.red)),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Remover',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .error),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -179,7 +200,13 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
                                           children: [
                                             Icon(Icons.person),
                                             SizedBox(width: 8),
-                                            Text('Remover Admin'),
+                                            Expanded(
+                                              child: Text(
+                                                'Remover Admin',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -203,11 +230,10 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color:
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.primaryContainer.withAlpha(26),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.primary.withAlpha(51),
           ),
         ),
         child: Column(
@@ -317,7 +343,7 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Convite enviado para $email'),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.secondary,
           ),
         );
       }
@@ -326,7 +352,7 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao enviar convite: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -379,7 +405,7 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
           CustomButton(
             text: 'Confirmar',
             onPressed: () => Navigator.of(context).pop(true),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         ],
       ),
@@ -390,9 +416,9 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
         await action();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ação executada com sucesso'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Ação executada com sucesso'),
+              backgroundColor: Theme.of(context).colorScheme.secondary,
             ),
           );
         }
@@ -401,7 +427,7 @@ class _GroupMembersPageState extends State<GroupMembersPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Erro: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }

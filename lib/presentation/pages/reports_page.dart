@@ -6,8 +6,8 @@ import '../providers/expense_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/auth_provider.dart';
-import '../providers/theme_provider.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/theme/app_theme.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -43,24 +43,12 @@ class _ReportsPageState extends State<ReportsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Relatórios'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: _showMonthYearPicker,
-          ),
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
           ),
         ],
       ),
@@ -90,11 +78,15 @@ class _ReportsPageState extends State<ReportsPage> {
                             color: Theme.of(context).colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Período: ${_getMonthName(_selectedMonth)} $_selectedYear',
-                            style: Theme.of(context).textTheme.titleMedium,
+                          Expanded(
+                            child: Text(
+                              'Período: ${_getMonthName(_selectedMonth)} $_selectedYear',
+                              style: Theme.of(context).textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           TextButton(
                             onPressed: _showMonthYearPicker,
                             child: const Text('Alterar'),
@@ -168,7 +160,7 @@ class _ReportsPageState extends State<ReportsPage> {
                     'Pago',
                     paidExpenses,
                     Icons.check_circle,
-                    Colors.green,
+                    Theme.of(context).colorScheme.secondary,
                   ),
                 ),
                 Expanded(
@@ -176,7 +168,7 @@ class _ReportsPageState extends State<ReportsPage> {
                     'Pendente',
                     pendingExpenses,
                     Icons.pending,
-                    Colors.orange,
+                    Theme.of(context).colorScheme.error,
                   ),
                 ),
               ],
@@ -527,27 +519,32 @@ class _ReportsPageState extends State<ReportsPage> {
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: expense.status == ExpenseStatus.paid
-                                  ? Colors.green.withOpacity(0.2)
-                                  : Colors.orange.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              expense.status == ExpenseStatus.paid
-                                  ? 'Pago'
-                                  : 'Pendente',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: expense.status == ExpenseStatus.paid
-                                    ? Colors.green[700]
-                                    : Colors.orange[700],
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          Builder(
+                            builder: (context) {
+                              final colorScheme = Theme.of(context).colorScheme;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: expense.status == ExpenseStatus.paid
+                                      ? colorScheme.secondary.withAlpha(51)
+                                      : colorScheme.error.withAlpha(51),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  expense.status == ExpenseStatus.paid
+                                      ? 'Pago'
+                                      : 'Pendente',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: expense.status == ExpenseStatus.paid
+                                        ? colorScheme.secondary
+                                        : colorScheme.error,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -562,20 +559,7 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 
   Color _getCategoryColor(String categoryName) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-      Colors.indigo,
-      Colors.pink,
-      Colors.cyan,
-    ];
-
-    final index = categoryName.hashCode % colors.length;
-    return colors[index];
+    return AppTheme.getCategoryColor(categoryName);
   }
 
   String _getMonthName(int month) {

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/group_provider.dart';
-import '../providers/theme_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../../core/constants/app_constants.dart';
@@ -116,7 +115,17 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     // Carregar grupos disponíveis
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GroupProvider>().loadUserGroups('user_id_placeholder');
+      final authProvider = context.read<AuthProvider>();
+      final groupProvider = context.read<GroupProvider>();
+
+      groupProvider.loadUserGroups(
+          authProvider.currentUser?.id ?? 'user_id_placeholder');
+
+      // Pré-selecionar um grupo se nenhum foi selecionado
+      if (_selectedGroupId == null) {
+        // Selecionar o grupo pessoal por padrão
+        _selectedGroupId = 'personal_${authProvider.currentUser?.id ?? ''}';
+      }
     });
   }
 
@@ -131,6 +140,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.expense != null;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -139,20 +149,8 @@ class _AddExpensePageState extends State<AddExpensePage> {
             : widget.group != null
                 ? 'Nova Despesa - ${widget.group!.name}'
                 : 'Nova Despesa'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
-        ],
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -250,7 +248,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
               ),
               const SizedBox(height: 16),
 
-              // Seletor de Grupo com interface melhorada
+              // Seletor de Grupo com Bottom Sheet
               Consumer<GroupProvider>(
                 builder: (context, groupProvider, child) {
                   if (groupProvider.isLoading) {
@@ -284,59 +282,174 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     ...groups,
                   ];
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.group, color: Colors.grey),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Selecionar Grupo',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w500,
+                  // Encontrar o grupo selecionado
+                  final selectedGroup = availableGroups.firstWhere(
+                    (g) => g.id == _selectedGroupId,
+                    orElse: () => availableGroups.first,
+                  );
+
+                  final colorScheme = Theme.of(context).colorScheme;
+                  final isPersonal = selectedGroup.id.startsWith('personal_');
+
+                  return GestureDetector(
+                    onTap: () => _showGroupSelectionBottomSheet(
+                      context,
+                      availableGroups,
+                    ),
+                    child: Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.primary.withAlpha(51),
+                                    colorScheme.primary.withAlpha(26),
+                                  ],
                                 ),
-                          ),
-                        ],
+                              ),
+                              child: Icon(
+                                isPersonal ? Icons.person : Icons.group,
+                                color: colorScheme.primary,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Grupo da Despesa',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface
+                                              .withAlpha(128),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    selectedGroup.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    selectedGroup.description,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          colorScheme.onSurface.withAlpha(102),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.expand_more,
+                              color: colorScheme.primary,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      ...availableGroups
-                          .map((group) => _buildGroupSelectionCard(group)),
-                    ],
+                    ),
                   );
                 },
               ),
               const SizedBox(height: 16),
 
-              // Seletor de Status
-              DropdownButtonFormField<ExpenseStatus>(
-                value: _selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  prefixIcon: Icon(Icons.flag),
-                  border: OutlineInputBorder(),
-                ),
-                items: ExpenseStatus.values.map((status) {
-                  return DropdownMenuItem<ExpenseStatus>(
-                    value: status,
-                    child: Row(
-                      children: [
-                        Icon(_getStatusIcon(status),
-                            color: _getStatusColor(status)),
-                        const SizedBox(width: 8),
-                        Text(_getStatusText(status)),
-                      ],
+              // Seletor de Status com Cards
+              Text(
+                'Status da Despesa',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: ExpenseStatus.values.map((status) {
+                  final isSelected = _selectedStatus == status;
+                  final statusColor = _getStatusColor(status, context);
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedStatus = status;
+                        });
+                        HapticFeedback.lightImpact();
+                      },
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        elevation: isSelected ? 8 : 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color:
+                                isSelected ? statusColor : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: isSelected
+                                ? statusColor.withAlpha(26)
+                                : Colors.grey[100],
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _getStatusIcon(status),
+                                color: statusColor,
+                                size: 28,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _getStatusText(status),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: statusColor,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedStatus = value!;
-                  });
-                },
               ),
               const SizedBox(height: 16),
 
@@ -365,22 +478,27 @@ class _AddExpensePageState extends State<AddExpensePage> {
               // Seletor de Data
               InkWell(
                 onTap: _selectDate,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Data: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                        style: const TextStyle(fontSize: 16),
+                child: Builder(
+                  builder: (context) {
+                    final colorScheme = Theme.of(context).colorScheme;
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: colorScheme.outline),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today),
+                          const SizedBox(width: 16),
+                          Text(
+                            'Data: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 32),
@@ -415,6 +533,20 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Validar se um grupo foi selecionado
+    if (_selectedGroupId == null || _selectedGroupId!.isEmpty) {
+      if (mounted) {
+        final colorScheme = Theme.of(context).colorScheme;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Por favor, selecione um grupo para a despesa'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -464,12 +596,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
       if (success) {
         if (mounted) {
+          final colorScheme = Theme.of(context).colorScheme;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(widget.expense != null
                   ? 'Despesa atualizada com sucesso!'
                   : 'Despesa criada com sucesso!'),
-              backgroundColor: Colors.green,
+              backgroundColor: colorScheme.primary,
             ),
           );
           Navigator.of(context).pop(true);
@@ -477,10 +610,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
       }
     } catch (e) {
       if (mounted) {
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar despesa: \$e'),
-            backgroundColor: Colors.red,
+            backgroundColor: colorScheme.error,
           ),
         );
       }
@@ -511,12 +645,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
   }
 
-  Color _getStatusColor(ExpenseStatus status) {
+  Color _getStatusColor(ExpenseStatus status, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case ExpenseStatus.pending:
-        return Colors.orange;
+        return colorScheme.error;
       case ExpenseStatus.paid:
-        return Colors.green;
+        return colorScheme.secondary;
     }
   }
 
@@ -529,82 +664,124 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
   }
 
-  Widget _buildGroupSelectionCard(Group group) {
-    final isSelected = _selectedGroupId == group.id;
-    final isPersonal = group.id.startsWith('personal_');
+  void _showGroupSelectionBottomSheet(
+      BuildContext context, List<Group> groups) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: isSelected ? 4 : 1,
-      color:
-          isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedGroupId = group.id;
-          });
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isPersonal
-                      ? Colors.blue.withOpacity(0.2)
-                      : Theme.of(context).primaryColor.withOpacity(0.2),
-                ),
-                child: Icon(
-                  isPersonal ? Icons.person : Icons.group,
-                  color:
-                      isPersonal ? Colors.blue : Theme.of(context).primaryColor,
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header com título
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outline.withAlpha(51),
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      group.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color:
-                            isSelected ? Theme.of(context).primaryColor : null,
+              child: Row(
+                children: [
+                  Icon(Icons.groups, color: colorScheme.primary, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selecionar Grupo',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        Text(
+                          'Escolha o grupo para esta despesa',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurface.withAlpha(128),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Lista de grupos
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: groups.length,
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  final isSelected = _selectedGroupId == group.id;
+                  final isPersonal = group.id.startsWith('personal_');
+
+                  return ListTile(
+                    onTap: () {
+                      setState(() {
+                        _selectedGroupId = group.id;
+                      });
+                      Navigator.pop(context);
+                      HapticFeedback.lightImpact();
+                    },
+                    leading: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isPersonal
+                            ? colorScheme.secondary.withAlpha(51)
+                            : colorScheme.primary.withAlpha(51),
+                      ),
+                      child: Icon(
+                        isPersonal ? Icons.person : Icons.group,
+                        color: isPersonal
+                            ? colorScheme.secondary
+                            : colorScheme.primary,
                       ),
                     ),
-                    if (group.description.isNotEmpty)
-                      Text(
-                        group.description,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    if (!isPersonal)
-                      Text(
-                        '${group.members.length} ${group.members.length == 1 ? 'membro' : 'membros'}',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 11,
-                        ),
-                      ),
-                  ],
-                ),
+                    title: Text(
+                      group.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      group.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: isSelected
+                        ? Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.primary,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          )
+                        : null,
+                    selected: isSelected,
+                    selectedTileColor: colorScheme.primary.withAlpha(26),
+                  );
+                },
               ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).primaryColor,
-                  size: 24,
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

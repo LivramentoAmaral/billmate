@@ -30,7 +30,8 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return TextFormField(
       controller: controller,
@@ -43,7 +44,7 @@ class CustomTextField extends StatelessWidget {
       style: TextStyle(
         fontSize: 17,
         fontWeight: FontWeight.w600,
-        color: isDark ? Colors.white : Colors.black,
+        color: colorScheme.onSurface,
         height: 1.4,
       ),
       decoration: InputDecoration(
@@ -53,31 +54,31 @@ class CustomTextField extends StatelessWidget {
         prefixIcon: prefixIcon,
         labelStyle: TextStyle(
           fontSize: 17,
-          color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
+          color: colorScheme.onSurface.withAlpha(200),
           fontWeight: FontWeight.w600,
         ),
         hintStyle: TextStyle(
           fontSize: 17,
-          color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+          color: colorScheme.onSurface.withAlpha(160),
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+            color: colorScheme.onSurface.withAlpha(160),
             width: 2,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+            color: colorScheme.onSurface.withAlpha(160),
             width: 2,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: isDark ? const Color(0xFF4CAF50) : const Color(0xFF1B5E20),
+            color: colorScheme.primary,
             width: 3,
           ),
         ),
@@ -100,11 +101,11 @@ class CustomTextField extends StatelessWidget {
           vertical: 20,
         ),
         filled: true,
-        fillColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-        // Adicionando suporte para tema escuro
-        iconColor: isDark ? const Color(0xFF4CAF50) : const Color(0xFF2E7D32),
-        prefixIconColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-        suffixIconColor: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+        fillColor: theme.inputDecorationTheme.fillColor ?? colorScheme.surface,
+        // Adicionando suporte para tema centralizado
+        iconColor: colorScheme.primary,
+        prefixIconColor: colorScheme.onSurface.withAlpha(160),
+        suffixIconColor: colorScheme.onSurface.withAlpha(160),
       ),
     );
   }

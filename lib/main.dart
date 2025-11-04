@@ -45,8 +45,7 @@ class BillmateApp extends StatelessWidget {
             title: 'Billmate',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.lightTheme,
-            darkTheme: themeProvider.darkTheme,
-            themeMode: themeProvider.themeMode,
+            // Tema escuro removido — a aplicação usa apenas o tema claro
             home: SplashPage(),
           );
         },
