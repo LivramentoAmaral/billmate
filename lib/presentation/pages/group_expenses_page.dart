@@ -25,9 +25,12 @@ class _GroupExpensesPageState extends State<GroupExpensesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text('Despesas - ${widget.group.name}'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
         actions: [
           IconButton(
             onPressed: () => _refreshExpenses(),
@@ -113,8 +116,7 @@ class _GroupExpensesPageState extends State<GroupExpensesPage> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.outline.withAlpha(51),
                   ),
                 ),
                 child: Column(
@@ -177,10 +179,10 @@ class _GroupExpensesPageState extends State<GroupExpensesPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withAlpha(26),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: color.withOpacity(0.2),
+            color: color.withAlpha(51),
           ),
         ),
         child: Column(

@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ?? 'Erro ao fazer login'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -59,12 +59,14 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: colorScheme.primary),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -73,38 +75,49 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 20),
 
-              // Logo
+              // Logo - Gradiente usando tema
               Container(
                 width: _logoContainerSize,
                 height: _logoContainerSize,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withAlpha(204),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(_borderRadiusSmall),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withAlpha(51),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.attach_money,
                   size: _logoIconSize,
-                  color: Color(0xFF2E7D32),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: _minPadding),
 
-              const Text(
+              Text(
                 'Entrar',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
               ),
               const SizedBox(height: _spacingSmall),
 
-              const Text(
+              Text(
                 'Entre com sua conta para continuar',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurface.withAlpha(153),
+                    ),
               ),
               const SizedBox(height: _spacingLarge),
 
@@ -112,8 +125,19 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 padding: const EdgeInsets.all(_minPadding),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(_borderRadiusSmall),
+                  border: Border.all(
+                    color: colorScheme.outline,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(13),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Form(
                   key: _formKey,
@@ -144,6 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                             _obscurePassword
                                 ? Icons.visibility_off
                                 : Icons.visibility,
+                            color: colorScheme.onSurface.withAlpha(128),
                           ),
                           onPressed: () {
                             setState(() {
@@ -175,12 +200,14 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             );
                           },
-                          child: const Text(
+                          child: Text(
                             'Esqueci minha senha',
-                            style: TextStyle(
-                              color: Color(0xFF2E7D32),
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: colorScheme.primary,
+                                ),
                           ),
                         ),
                       ),
@@ -196,12 +223,14 @@ class _LoginPageState extends State<LoginPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Não tem uma conta? ',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 15,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: colorScheme.onSurface.withAlpha(128),
+                                ),
                           ),
                           GestureDetector(
                             onTap: () {
@@ -211,14 +240,15 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               'Crie uma agora',
-                              style: TextStyle(
-                                color: Color(0xFF2E7D32),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                decoration: TextDecoration.underline,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(
+                                    color: colorScheme.primary,
+                                    decoration: TextDecoration.underline,
+                                  ),
                             ),
                           ),
                         ],

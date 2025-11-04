@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/expense_provider.dart';
-import '../providers/theme_provider.dart';
 import 'login_page.dart';
 import 'add_expense_page.dart';
 import 'groups_page.dart';
@@ -28,6 +27,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -38,8 +39,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2E7D32),
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurface.withAlpha(128),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
@@ -67,25 +68,13 @@ class _HomePageState extends State<HomePage> {
 class DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
-        ],
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
       body: Consumer2<AuthProvider, ExpenseProvider>(
         builder: (context, authProvider, expenseProvider, child) {
@@ -114,11 +103,11 @@ class DashboardTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Bem-vindo ao Billmate',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey,
+                    color: colorScheme.onSurface.withAlpha(128),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -131,7 +120,7 @@ class DashboardTab extends StatelessWidget {
                         'Despesas do Mês',
                         'R\$ ${expenseProvider.currentMonthTotal.toStringAsFixed(2)}',
                         Icons.receipt_long,
-                        Colors.blue,
+                        colorScheme.primary,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -140,7 +129,7 @@ class DashboardTab extends StatelessWidget {
                         'Total Despesas',
                         '${expenseProvider.userExpenses.length}',
                         Icons.list_alt,
-                        Colors.green,
+                        colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -154,7 +143,7 @@ class DashboardTab extends StatelessWidget {
                         'Pendências',
                         '${expenseProvider.pendingExpensesCount}',
                         Icons.pending_actions,
-                        Colors.orange,
+                        Theme.of(context).colorScheme.error,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -163,7 +152,7 @@ class DashboardTab extends StatelessWidget {
                         'Status',
                         expenseProvider.isLoading ? 'Carregando...' : 'Ativo',
                         Icons.check_circle,
-                        Colors.purple,
+                        Theme.of(context).colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -184,7 +173,7 @@ class DashboardTab extends StatelessWidget {
                   'Adicionar Despesa',
                   'Registre uma nova despesa rapidamente',
                   Icons.add_circle,
-                  Colors.blue,
+                  Theme.of(context).colorScheme.primary,
                   () async {
                     final result = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(builder: (_) => AddExpensePage()),
@@ -210,7 +199,7 @@ class DashboardTab extends StatelessWidget {
                   'Despesas Pessoais',
                   'Gerencie suas despesas pessoais com estatísticas',
                   Icons.person_outline,
-                  Colors.purple,
+                  Theme.of(context).colorScheme.secondary,
                   () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -225,7 +214,7 @@ class DashboardTab extends StatelessWidget {
                   'Criar Grupo',
                   'Crie um novo grupo para compartilhar despesas',
                   Icons.group_add,
-                  Colors.green,
+                  Theme.of(context).colorScheme.secondary,
                   () {
                     // TODO: Implementar
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -243,47 +232,52 @@ class DashboardTab extends StatelessWidget {
 
   Widget _buildSummaryCard(
       String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const Spacer(),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(13),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 24),
+                  const Spacer(),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurface.withAlpha(128),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -292,7 +286,7 @@ class DashboardTab extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withAlpha(26),
           child: Icon(icon, color: color),
         ),
         title: Text(
@@ -333,8 +327,8 @@ class _ExpensesTabState extends State<ExpensesTab> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Despesas'),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             onPressed: () {
@@ -360,22 +354,12 @@ class _ExpensesTabState extends State<ExpensesTab> {
             },
             icon: const Icon(Icons.refresh),
           ),
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
         ],
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, expenseProvider, child) {
+          final colorScheme = Theme.of(context).colorScheme;
+
           if (expenseProvider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(),
@@ -390,20 +374,22 @@ class _ExpensesTabState extends State<ExpensesTab> {
                   Icon(
                     Icons.error_outline,
                     size: 64,
-                    color: Colors.red[300],
+                    color: colorScheme.error,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Erro ao carregar despesas',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.red[300],
+                      color: colorScheme.error,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     expenseProvider.error!,
-                    style: const TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withAlpha(128),
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -425,58 +411,65 @@ class _ExpensesTabState extends State<ExpensesTab> {
           }
 
           if (expenseProvider.userExpenses.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.receipt_long_outlined,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Nenhuma despesa encontrada',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Adicione sua primeira despesa para começar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final result = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(builder: (_) => AddExpensePage()),
-                      );
+            return Builder(
+              builder: (context) {
+                final colorScheme = Theme.of(context).colorScheme;
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 80,
+                        color: colorScheme.onSurface.withAlpha(128),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nenhuma despesa encontrada',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: colorScheme.onSurface.withAlpha(128),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Adicione sua primeira despesa para começar',
+                        style: TextStyle(
+                            color: colorScheme.onSurface.withAlpha(128)),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final result = await Navigator.of(context).push<bool>(
+                            MaterialPageRoute(builder: (_) => AddExpensePage()),
+                          );
 
-                      // Se a despesa foi criada com sucesso, recarregar a lista
-                      if (result == true && context.mounted) {
-                        final authProvider =
-                            Provider.of<AuthProvider>(context, listen: false);
-                        final expenseProvider = Provider.of<ExpenseProvider>(
-                            context,
-                            listen: false);
+                          // Se a despesa foi criada com sucesso, recarregar a lista
+                          if (result == true && context.mounted) {
+                            final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false);
+                            final expenseProvider =
+                                Provider.of<ExpenseProvider>(context,
+                                    listen: false);
 
-                        if (authProvider.currentUser != null) {
-                          expenseProvider
-                              .loadUserExpenses(authProvider.currentUser!.id);
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar Despesa'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      foregroundColor: Colors.white,
-                    ),
+                            if (authProvider.currentUser != null) {
+                              expenseProvider.loadUserExpenses(
+                                  authProvider.currentUser!.id);
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Adicionar Despesa'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           }
 
@@ -516,20 +509,21 @@ class _ExpensesTabState extends State<ExpensesTab> {
   }
 
   Widget _buildExpenseCard(expense, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: expense.status == ExpenseStatus.paid
-              ? Colors.green.withOpacity(0.1)
-              : Colors.orange.withOpacity(0.1),
+              ? colorScheme.secondary.withAlpha(26)
+              : colorScheme.error.withAlpha(26),
           child: Icon(
             expense.status == ExpenseStatus.paid
                 ? Icons.check_circle
                 : Icons.pending,
             color: expense.status == ExpenseStatus.paid
-                ? Colors.green
-                : Colors.orange,
+                ? colorScheme.secondary
+                : colorScheme.error,
           ),
         ),
         title: Text(
@@ -544,9 +538,9 @@ class _ExpensesTabState extends State<ExpensesTab> {
             const SizedBox(height: 4),
             Text(
               '${expense.date.day.toString().padLeft(2, '0')}/${expense.date.month.toString().padLeft(2, '0')}/${expense.date.year}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: colorScheme.onSurface.withAlpha(128),
               ),
             ),
           ],
@@ -567,20 +561,100 @@ class _ExpensesTabState extends State<ExpensesTab> {
               style: TextStyle(
                 fontSize: 12,
                 color: expense.status == ExpenseStatus.paid
-                    ? Colors.green
-                    : Colors.orange,
+                    ? Theme.of(context).colorScheme.secondary
+                    : Theme.of(context).colorScheme.error,
               ),
             ),
           ],
         ),
-        onTap: () {
-          // TODO: Implementar detalhes da despesa
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Detalhes de "${expense.name}"')),
-          );
-        },
+        onTap: () => _showExpenseOptions(context, expense),
       ),
     );
+  }
+
+  void _showExpenseOptions(BuildContext context, expense) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  expense.status == ExpenseStatus.paid
+                      ? Icons.schedule
+                      : Icons.check_circle,
+                  color: colorScheme.primary,
+                ),
+                title: Text(
+                  expense.status == ExpenseStatus.paid
+                      ? 'Marcar como Pendente'
+                      : 'Marcar como Pago',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleExpenseStatus(context, expense);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.edit, color: colorScheme.primary),
+                title: const Text('Editar despesa'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddExpensePage(expense: expense),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _toggleExpenseStatus(BuildContext context, expense) async {
+    final expenseProvider = context.read<ExpenseProvider>();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    try {
+      final newStatus = expense.status == ExpenseStatus.paid
+          ? ExpenseStatus.pending
+          : ExpenseStatus.paid;
+
+      final success = await expenseProvider.updateExpenseStatus(
+        expense.id,
+        newStatus,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newStatus == ExpenseStatus.paid
+                  ? 'Despesa marcada como Paga'
+                  : 'Despesa marcada como Pendente',
+            ),
+            backgroundColor: colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao atualizar status: $e'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -601,22 +675,8 @@ class ProfileTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
-        ],
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
@@ -629,19 +689,24 @@ class ProfileTab extends StatelessWidget {
                 const SizedBox(height: 40),
 
                 // Avatar
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: const Color(0xFF2E7D32),
-                  child: Text(
-                    user?.name.isNotEmpty == true
-                        ? user!.name[0].toUpperCase()
-                        : 'U',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                Builder(
+                  builder: (context) {
+                    final colorScheme = Theme.of(context).colorScheme;
+                    return CircleAvatar(
+                      radius: 50,
+                      backgroundColor: colorScheme.primary,
+                      child: Text(
+                        user?.name.isNotEmpty == true
+                            ? user!.name[0].toUpperCase()
+                            : 'U',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
 
@@ -656,12 +721,17 @@ class ProfileTab extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 // Email do usuário
-                Text(
-                  user?.email ?? '',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final colorScheme = Theme.of(context).colorScheme;
+                    return Text(
+                      user?.email ?? '',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: colorScheme.onSurface.withAlpha(128),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 40),
 
@@ -702,24 +772,29 @@ class ProfileTab extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await authProvider.signOut();
-                      if (context.mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (_) => LoginPage()),
-                        );
-                      }
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final colorScheme = Theme.of(context).colorScheme;
+                      return ElevatedButton.icon(
+                        onPressed: () async {
+                          await authProvider.signOut();
+                          if (context.mounted) {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(builder: (_) => LoginPage()),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.exit_to_app),
+                        label: const Text('Sair'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.error,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.exit_to_app),
-                    label: const Text('Sair'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -732,26 +807,31 @@ class ProfileTab extends StatelessWidget {
   }
 
   Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
-            ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withAlpha(128),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

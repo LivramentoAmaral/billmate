@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/group.dart';
+import '../../domain/entities/expense.dart';
+import '../../core/constants/app_constants.dart';
 import '../providers/auth_provider.dart';
 import '../providers/group_provider.dart';
-import '../providers/theme_provider.dart';
+import '../providers/expense_provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import 'group_members_page.dart';
@@ -51,22 +53,9 @@ class _GroupsPageState extends State<GroupsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Grupos'),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
-        ],
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        actions: [],
       ),
       body: Consumer2<GroupProvider, AuthProvider>(
         builder: (context, groupProvider, authProvider, child) {
@@ -205,148 +194,278 @@ class _GroupsPageState extends State<GroupsPage> {
     final isSelected = groupProvider.selectedGroup?.id == group.id;
     final isAdmin = group.adminId == authProvider.currentUser?.id;
 
-    return Card(
-      elevation: isSelected ? 8 : 2,
-      child: InkWell(
-        onTap: () => groupProvider.setSelectedGroup(group),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return Consumer<ExpenseProvider>(
+      builder: (context, expenseProvider, child) {
+        // Calcular estatísticas de despesas do grupo
+        final groupExpenses = expenseProvider.expenses
+            .where((expense) => expense.groupId == group.id)
+            .toList();
+        final totalExpenses = groupExpenses.fold<double>(
+            0.0, (total, expense) => total + expense.amount);
+        final pendingExpenses = groupExpenses
+            .where((e) => e.status == ExpenseStatus.pending)
+            .length;
+
+        return Card(
+          elevation: isSelected ? 8 : 2,
+          child: InkWell(
+            onTap: () => groupProvider.setSelectedGroup(group),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.group,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primaryContainer,
+                        child: Icon(
+                          Icons.group,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                group.name,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    group.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
+                            if (group.description.isNotEmpty)
+                              Text(
+                                group.description,
                                 style: Theme.of(context)
                                     .textTheme
-                                    .titleMedium
+                                    .bodyMedium
                                     ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                     ),
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
                               ),
                           ],
                         ),
-                        if (group.description.isNotEmpty)
-                          Text(
-                            group.description,
+                      ),
+                      if (isAdmin)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Admin',
                             style: Theme.of(context)
                                 .textTheme
-                                .bodyMedium
+                                .labelSmall
                                 ?.copyWith(
                                   color: Theme.of(context)
                                       .colorScheme
-                                      .onSurfaceVariant,
+                                      .onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
                                 ),
                           ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Membros
+                      Icon(
+                        Icons.people,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${group.members.length} ${group.members.length == 1 ? 'membro' : 'membros'}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Data de criação
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Criado em ${group.createdAt.day}/${group.createdAt.month}/${group.createdAt.year}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                  // Estatísticas de despesas
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withAlpha(51),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Column(
+                          children: [
+                            Text(
+                              'R\$ ${totalExpenses.toStringAsFixed(2)}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+                            Text(
+                              'Total',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              '${groupExpenses.length}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+                            Text(
+                              'Despesas',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        Column(
+                          children: [
+                            Text(
+                              '$pendingExpenses',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                            ),
+                            Text(
+                              'Pendentes',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  if (isAdmin)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Admin',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.people,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${group.members.length} ${group.members.length == 1 ? 'membro' : 'membros'}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  if (isSelected) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.spaceEvenly,
+                      spacing: 8.0,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _showGroupDetails(context, group),
+                          icon: const Icon(Icons.info_outline, size: 18),
+                          label: const Text('Detalhes'),
                         ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Criado em ${group.createdAt.day}/${group.createdAt.month}/${group.createdAt.year}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        TextButton.icon(
+                          onPressed: () => _showExpenses(context, group),
+                          icon: const Icon(Icons.receipt_long, size: 18),
+                          label: const Text('Despesas'),
                         ),
-                  ),
-                ],
-              ),
-              if (isSelected) ...[
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.spaceEvenly,
-                  spacing: 8.0,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _showGroupDetails(context, group),
-                      icon: const Icon(Icons.info_outline, size: 18),
-                      label: const Text('Detalhes'),
+                        if (isAdmin)
+                          TextButton.icon(
+                            onPressed: () => _showManageMembers(context, group),
+                            icon: const Icon(Icons.manage_accounts, size: 18),
+                            label: const Text('Gerenciar'),
+                          ),
+                      ],
                     ),
-                    TextButton.icon(
-                      onPressed: () => _showExpenses(context, group),
-                      icon: const Icon(Icons.receipt_long, size: 18),
-                      label: const Text('Despesas'),
-                    ),
-                    if (isAdmin)
-                      TextButton.icon(
-                        onPressed: () => _showManageMembers(context, group),
-                        icon: const Icon(Icons.manage_accounts, size: 18),
-                        label: const Text('Gerenciar'),
-                      ),
                   ],
-                ),
-              ],
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

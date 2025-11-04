@@ -5,7 +5,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/expense_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/category_provider.dart';
-import '../providers/theme_provider.dart';
 import '../../domain/entities/expense.dart';
 import '../../core/constants/app_constants.dart';
 import 'add_expense_page.dart';
@@ -25,6 +24,7 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
   // Filtros
   ExpenseStatus? _selectedStatus;
   String? _selectedCategoryId;
+  String? _selectedGroupId; // Novo: filtro de grupo
   DateTime? _startDate;
   DateTime? _endDate;
   double? _minAmount;
@@ -60,9 +60,11 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
 
   List<Expense> _getFilteredExpenses(List<Expense> expenses) {
     var filtered = expenses.where((expense) {
-      // Filtrar apenas despesas pessoais
-      if (!expense.groupId.startsWith('personal_')) return false;
-
+      // Filtrar por grupo selecionado, ou todas se nenhum selecionado
+      if (_selectedGroupId != null && expense.groupId != _selectedGroupId) {
+        return false;
+      }
+      // Se nenhum grupo selecionado, mostrar todas as despesas do usuário (pessoais + grupos)
       // Filtro por status
       if (_selectedStatus != null && expense.status != _selectedStatus) {
         return false;
@@ -115,9 +117,13 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Minhas Despesas'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onSecondary,
         elevation: 0,
         actions: [
           IconButton(
@@ -130,21 +136,15 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
             icon: const Icon(Icons.filter_list),
             tooltip: 'Filtros',
           ),
-          IconButton(
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-              HapticFeedback.lightImpact();
-            },
-            icon: Icon(
-              Theme.of(context).brightness == Brightness.dark
-                  ? Icons.light_mode
-                  : Icons.dark_mode,
-            ),
-            tooltip: 'Alternar tema',
-          ),
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 4,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withAlpha(153),
+          splashFactory: InkRipple.splashFactory,
+          enableFeedback: true,
           tabs: const [
             Tab(icon: Icon(Icons.analytics_outlined), text: 'Estatísticas'),
             Tab(icon: Icon(Icons.list_alt), text: 'Lista'),
@@ -152,12 +152,21 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildStatisticsTab(),
-          _buildListTab(),
-          _buildChartsTab(),
+          // Seletor de Grupo
+          _buildGroupSelector(),
+          // TabBarView
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildStatisticsTab(),
+                _buildListTab(),
+                _buildChartsTab(),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -366,7 +375,7 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      childAspectRatio: 1.8,
+      childAspectRatio: 0.9,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       children: [
@@ -398,34 +407,209 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
     );
   }
 
+  Widget _buildGroupSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Consumer2<ExpenseProvider, AuthProvider>(
+      builder: (context, expenseProvider, authProvider, child) {
+        final allExpenses = expenseProvider.userExpenses;
+
+        // Agrupar despesas por grupo
+        final groupsMap = <String, (String name, int count, double total)>{};
+
+        for (final expense in allExpenses) {
+          if (!groupsMap.containsKey(expense.groupId)) {
+            groupsMap[expense.groupId] = (
+              expense.groupId.startsWith('personal_')
+                  ? 'Pessoal'
+                  : expense.groupId,
+              0,
+              0.0,
+            );
+          }
+          final current = groupsMap[expense.groupId]!;
+          groupsMap[expense.groupId] = (
+            current.$1,
+            current.$2 + 1,
+            current.$3 + expense.amount,
+          );
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            child: Row(
+              children: [
+                // Botão "Todos"
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedGroupId = null;
+                      });
+                      HapticFeedback.lightImpact();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedGroupId == null
+                            ? colorScheme.primary
+                            : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.all_inclusive,
+                            size: 18,
+                            color: _selectedGroupId == null
+                                ? Colors.white
+                                : colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Todos',
+                            style: TextStyle(
+                              color: _selectedGroupId == null
+                                  ? Colors.white
+                                  : colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Grupos
+                ...groupsMap.entries.map((entry) {
+                  final groupId = entry.key;
+                  final (name, count, total) = entry.value;
+                  final isSelected = _selectedGroupId == groupId;
+                  final isPersonal = groupId.startsWith('personal_');
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedGroupId = groupId;
+                        });
+                        HapticFeedback.lightImpact();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isPersonal ? Icons.person : Icons.group,
+                              size: 16,
+                              color: isSelected
+                                  ? Colors.white
+                                  : colorScheme.onSurface,
+                            ),
+                            const SizedBox(width: 6),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : colorScheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  '$count despesa${count != 1 ? 's' : ''}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white.withAlpha(204)
+                                        : colorScheme.onSurface.withAlpha(128),
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
     return Card(
       elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              color.withAlpha(26),
+              color.withAlpha(13),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 32),
+              const SizedBox(height: 10),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -458,43 +642,48 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
             if (expense.description != null)
               Text(
                 expense.description!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.calendar_today,
-                    size: 14, color: Colors.grey.shade500),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDate(expense.date),
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: expense.status == ExpenseStatus.paid
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.orange.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _getStatusText(expense.status),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today,
+                      size: 14, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatDate(expense.date),
                     style: TextStyle(
-                      color: expense.status == ExpenseStatus.paid
-                          ? Colors.green.shade700
-                          : Colors.orange.shade700,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade500,
+                      fontSize: 12,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: expense.status == ExpenseStatus.paid
+                          ? Colors.green.withOpacity(0.2)
+                          : Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _getStatusText(expense.status),
+                      style: TextStyle(
+                        color: expense.status == ExpenseStatus.paid
+                            ? Colors.green.shade700
+                            : Colors.orange.shade700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -524,9 +713,15 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
                         size: 18,
                       ),
                       const SizedBox(width: 8),
-                      Text(expense.status == ExpenseStatus.paid
-                          ? 'Marcar como Pendente'
-                          : 'Marcar como Pago'),
+                      Expanded(
+                        child: Text(
+                          expense.status == ExpenseStatus.paid
+                              ? 'Marcar como Pendente'
+                              : 'Marcar como Pago',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -536,7 +731,13 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
                     children: [
                       Icon(Icons.edit, size: 18),
                       SizedBox(width: 8),
-                      Text('Editar'),
+                      Expanded(
+                        child: Text(
+                          'Editar',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -546,7 +747,13 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
                     children: [
                       Icon(Icons.info_outline, size: 18),
                       SizedBox(width: 8),
-                      Text('Detalhes'),
+                      Expanded(
+                        child: Text(
+                          'Detalhes',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1034,7 +1241,8 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
       ),
     );
 
-    if (result == true) {
+    // Verificar se o widget ainda está montado após a navegação
+    if (mounted && result == true) {
       _loadUserExpenses();
     }
   }
@@ -1052,6 +1260,7 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
             expense.id, ExpenseStatus.pending);
         break;
       case 'edit':
+        // Extrair context-dependent values ANTES da operação assíncrona
         final authProvider = context.read<AuthProvider>();
         if (authProvider.currentUser == null) return;
 
@@ -1065,6 +1274,8 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
           members: [],
         );
 
+        // Usar context.read<NavigatorState>() não funciona bem
+        // Então apenas garantir que verificamos mounted após o await
         final result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => AddExpensePage(
@@ -1074,7 +1285,8 @@ class _PersonalExpensesPageState extends State<PersonalExpensesPage>
           ),
         );
 
-        if (result == true) {
+        // Verificar se o widget ainda está montado após a navegação
+        if (mounted && result == true) {
           _loadUserExpenses();
         }
         break;

@@ -57,7 +57,7 @@ class _RegisterPageState extends State<RegisterPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ?? 'Erro ao criar conta'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -66,12 +66,14 @@ class _RegisterPageState extends State<RegisterPage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: colorScheme.primary),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -80,38 +82,49 @@ class _RegisterPageState extends State<RegisterPage>
             children: [
               const SizedBox(height: 20),
 
-              // Logo
+              // Logo - Gradiente usando tema
               Container(
                 width: _logoContainerSize,
                 height: _logoContainerSize,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withAlpha(204),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(_borderRadiusSmall),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withAlpha(51),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.account_balance_wallet,
                   size: _logoIconSize,
-                  color: Color(0xFF2E7D32),
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: _minPadding),
 
-              const Text(
+              Text(
                 'Criar Conta',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
               ),
               const SizedBox(height: _spacingSmall),
 
-              const Text(
+              Text(
                 'Preencha os dados abaixo',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurface.withAlpha(153),
+                    ),
               ),
               const SizedBox(height: _spacingLarge),
 
@@ -119,8 +132,19 @@ class _RegisterPageState extends State<RegisterPage>
               Container(
                 padding: const EdgeInsets.all(_minPadding),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(_borderRadiusSmall),
+                  border: Border.all(
+                    color: colorScheme.outline,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(13),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Form(
                   key: _formKey,
@@ -166,6 +190,7 @@ class _RegisterPageState extends State<RegisterPage>
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                             size: _iconSize,
+                            color: colorScheme.onSurface.withAlpha(128),
                           ),
                           onPressed: () {
                             setState(() {
@@ -194,6 +219,7 @@ class _RegisterPageState extends State<RegisterPage>
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                             size: _iconSize,
+                            color: colorScheme.onSurface.withAlpha(128),
                           ),
                           onPressed: () {
                             setState(() {
@@ -232,20 +258,21 @@ class _RegisterPageState extends State<RegisterPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Já tem uma conta? ',
-                    style: TextStyle(color: Colors.white70),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface.withAlpha(128),
+                        ),
                   ),
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: const Text(
+                    child: Text(
                       'Faça login',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: colorScheme.primary,
+                          ),
                     ),
                   ),
                 ],

@@ -157,6 +157,102 @@ class LocalDatabase {
     _database = null;
   }
 
+  /// Zera o banco de dados e adiciona categorias padrão
+  Future<void> resetDatabaseWithDefaults() async {
+    await deleteDatabase();
+    _database = null;
+    final db = await database;
+
+    // Adicionar categorias padrão
+    final defaultCategories = [
+      {
+        'id': 'cat_alimentacao',
+        'name': 'Alimentação',
+        'description': 'Despesas com comida e refeições',
+        'color': '#FF6B35',
+        'iconCode': '🍔',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_transporte',
+        'name': 'Transporte',
+        'description': 'Despesas com transporte e combustível',
+        'color': '#004E89',
+        'iconCode': '🚗',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_saude',
+        'name': 'Saúde',
+        'description': 'Despesas com saúde e medicamentos',
+        'color': '#EF476F',
+        'iconCode': '🏥',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_educacao',
+        'name': 'Educação',
+        'description': 'Despesas com educação e cursos',
+        'color': '#FFD60A',
+        'iconCode': '📚',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_lazer',
+        'name': 'Lazer',
+        'description': 'Despesas com entretenimento e lazer',
+        'color': '#B5179E',
+        'iconCode': '🎮',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_utilidades',
+        'name': 'Utilidades',
+        'description': 'Despesas com água, luz, internet',
+        'color': '#3A86FF',
+        'iconCode': '💡',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_roupas',
+        'name': 'Roupas',
+        'description': 'Despesas com roupas e acessórios',
+        'color': '#FB5607',
+        'iconCode': '👕',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_casa',
+        'name': 'Casa',
+        'description': 'Despesas com mobília e manutenção',
+        'color': '#FFBE0B',
+        'iconCode': '🏠',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      {
+        'id': 'cat_outros',
+        'name': 'Outros',
+        'description': 'Outras despesas',
+        'color': '#8338EC',
+        'iconCode': '💰',
+        'isDefault': 1,
+        'createdAt': DateTime.now().millisecondsSinceEpoch,
+      },
+    ];
+
+    for (final category in defaultCategories) {
+      await db.insert('categories', category);
+    }
+  }
+
   // Transações
   Future<T> transaction<T>(Future<T> Function(Transaction txn) action) async {
     final db = await database;

@@ -21,8 +21,7 @@ void main() {
           builder: (context, themeProvider, child) {
             return MaterialApp(
               theme: themeProvider.lightTheme,
-              darkTheme: themeProvider.darkTheme,
-              themeMode: themeProvider.themeMode,
+              // Tema escuro removido — uso apenas do tema claro
               home: const Scaffold(
                 body: Center(
                   child: Text('Billmate Test'),

@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import 'local_database.dart';
 
@@ -93,20 +94,37 @@ class UserLocalDataSourceImpl implements UserLocalDataSource {
 
   @override
   Future<UserModel?> getCurrentUser() async {
-    // Implementar lógica para obter usuário atual
-    // Por exemplo, através de SharedPreferences
-    return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('current_user_id');
+
+      if (userId == null) {
+        return null;
+      }
+
+      return await getUserById(userId);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
   Future<void> setCurrentUser(String userId) async {
-    // Implementar lógica para definir usuário atual
-    // Por exemplo, salvar em SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_user_id', userId);
+    } catch (e) {
+      // Log error
+    }
   }
 
   @override
   Future<void> clearCurrentUser() async {
-    // Implementar lógica para limpar usuário atual
-    // Por exemplo, remover de SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('current_user_id');
+    } catch (e) {
+      // Log error
+    }
   }
 }
